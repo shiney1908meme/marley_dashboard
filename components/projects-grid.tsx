@@ -8,7 +8,7 @@ import { ExternalLink, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 
-// HARDCODED DATA WITH CORRECT LINKS AND DESCRIPTIONS - Always available
+// HARDCODED DATA WITH CORRECT LINKS AND DESCRIPTIONS
 const projects = [
   {
     id: "1",
@@ -143,7 +143,7 @@ export default function ProjectsGrid() {
                             className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6"
                           />
                         </div>
-                        {/* Main Image */}
+                        {/* Main Image - FORCED TO SHOW */}
                         <div className="relative">
                           <Image
                             src={project.image_url || "/placeholder.svg"}
@@ -177,7 +177,8 @@ export default function ProjectsGrid() {
                         height={200}
                         className="h-28 sm:h-32 md:h-36 lg:h-40 w-full object-cover transition-transform duration-500 hover:scale-105"
                         loading="lazy"
-                        unoptimized
+                        placeholder="blur"
+                        blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
                       />
                     )}
                   </div>
