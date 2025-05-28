@@ -4,16 +4,58 @@ import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { testSupabaseConnection, getProjects, type Project } from "@/lib/supabase-fixed"
-import EnvDebug from "@/components/env-debug"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { AlertCircle, CheckCircle, XCircle } from "lucide-react"
+
+// Import with error handling
+let testSupabaseConnection: any = null
+let getProjects: any = null
+let Project: any = null
+
+try {
+  const supabaseModule = require("@/lib/supabase-fixed")
+  testSupabaseConnection = supabaseModule.testSupabaseConnection
+  getProjects = supabaseModule.getProjects
+  Project = supabaseModule.Project
+} catch (error) {
+  console.warn("Supabase module not available:", error)
+}
 
 export default function TestDatabasePage() {
   const [connectionStatus, setConnectionStatus] = useState<"idle" | "testing" | "success" | "error">("idle")
-  const [projects, setProjects] = useState<Project[]>([])
+  const [projects, setProjects] = useState<any[]>([])
   const [error, setError] = useState<string | null>(null)
   const [connectionDetails, setConnectionDetails] = useState<any>(null)
+  const [envVarsAvailable, setEnvVarsAvailable] = useState(false)
+
+  // Check environment variables on client side
+  useEffect(() => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    setEnvVarsAvailable(!!(supabaseUrl && supabaseKey))
+
+    // Auto-run test if both variables are available
+    if (supabaseUrl && supabaseKey && testSupabaseConnection) {
+      runFullTest()
+    }
+  }, [])
 
   const runFullTest = async () => {
+    if (!envVarsAvailable) {
+      setError(
+        "Environment variables not configured. Please add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to your environment.",
+      )
+      setConnectionStatus("error")
+      return
+    }
+
+    if (!testSupabaseConnection || !getProjects) {
+      setError("Supabase client not available. This might be a build-time issue.")
+      setConnectionStatus("error")
+      return
+    }
+
     setConnectionStatus("testing")
     setError(null)
     setConnectionDetails(null)
@@ -49,18 +91,61 @@ export default function TestDatabasePage() {
     }
   }
 
+  // Auto-test on component mount only if env vars are available
   useEffect(() => {
-    // Auto-test on component mount
-    runFullTest()
-  }, [])
+    if (envVarsAvailable && testSupabaseConnection) {
+      runFullTest()
+    }
+  }, [envVarsAvailable])
 
   return (
     <div className="min-h-screen bg-[#1C2526] text-white p-8">
       <div className="container mx-auto max-w-4xl">
         <h1 className="text-3xl font-bold text-[#F97316] mb-8 text-center">Supabase Integration Diagnostics</h1>
 
-        {/* Environment Variables Debug */}
-        <EnvDebug />
+        {/* Environment Variables Status */}
+        <Card className="bg-[#1C2526] border-[#6B21A8]/20 mb-6">
+          <CardHeader>
+            <CardTitle className="text-[#F97316] flex items-center gap-2">
+              {envVarsAvailable ? (
+                <CheckCircle className="w-5 h-5 text-green-500" />
+              ) : (
+                <XCircle className="w-5 h-5 text-red-500" />
+              )}
+              Environment Variables
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span>NEXT_PUBLIC_SUPABASE_URL</span>
+                <Badge className="bg-green-500/20 text-green-400">✅ Configured</Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>NEXT_PUBLIC_SUPABASE_ANON_KEY</span>
+                <Badge className="bg-green-500/20 text-green-400">✅ Configured</Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Show warning if environment variables are missing */}
+        {!envVarsAvailable && (
+          <Alert className="mb-6 border-yellow-500/20 bg-yellow-500/10">
+            <AlertCircle className="h-4 w-4 text-yellow-500" />
+            <AlertDescription className="text-yellow-400">
+              <strong>Environment Variables Missing:</strong> Please configure your Supabase environment variables in
+              your deployment settings.
+              <br />
+              <br />
+              <strong>Required variables:</strong>
+              <ul className="list-disc list-inside mt-2 space-y-1">
+                <li>NEXT_PUBLIC_SUPABASE_URL</li>
+                <li>NEXT_PUBLIC_SUPABASE_ANON_KEY</li>
+              </ul>
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Connection Test */}
         <Card className="bg-[#1C2526] border-[#6B21A8]/20 mb-6">
@@ -70,8 +155,8 @@ export default function TestDatabasePage() {
           <CardContent className="space-y-4">
             <Button
               onClick={runFullTest}
-              disabled={connectionStatus === "testing"}
-              className="w-full bg-[#6B21A8] hover:bg-[#22C55E]"
+              disabled={connectionStatus === "testing" || !envVarsAvailable}
+              className="w-full bg-[#6B21A8] hover:bg-[#22C55E] disabled:opacity-50"
             >
               {connectionStatus === "testing" ? "Running Tests..." : "Run Full Test"}
             </Button>
@@ -99,11 +184,11 @@ export default function TestDatabasePage() {
                 <div className="mt-4 text-sm text-gray-300">
                   <p className="font-medium text-yellow-400">Troubleshooting Tips:</p>
                   <ul className="list-disc list-inside mt-2 space-y-1">
-                    <li>Check if your .env.local file exists in the project root</li>
-                    <li>Restart your development server after adding environment variables</li>
+                    <li>Check if your environment variables are set in your deployment platform</li>
                     <li>Verify your Supabase project is active and accessible</li>
                     <li>Check if your API keys are correct in Supabase dashboard</li>
                     <li>Ensure environment variables start with NEXT_PUBLIC_ for client-side access</li>
+                    <li>Try redeploying after setting environment variables</li>
                   </ul>
                 </div>
               </div>
